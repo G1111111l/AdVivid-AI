@@ -53,11 +53,8 @@ npm run dev:queue
 7. Preview and export the generated video.
 8. Open the analytics panel to view mock creative-factor performance.
 
-## For Beginners
+## Project Docs
 
-If you are learning this project step by step, start with:
-
-- [小白上手路线](docs/beginner-roadmap.md)
 - [Architecture](docs/architecture.md)
 - [API overview](docs/api.md)
 - [Demo script](docs/demo-script.md)
@@ -65,9 +62,6 @@ If you are learning this project step by step, start with:
 - [Deployment](docs/deployment.md)
 - [Model smoke tests](docs/model-smoke-tests.md)
 - [Final acceptance checklist](docs/final-acceptance.md)
-- [赛题要求对照表](docs/requirements-compliance.md)
-- [比赛提交材料草稿](docs/submission-package.md)
-- [提交与答辩指南](docs/submission-guide.md)
 
 The project is currently in the P1 enhancement stage. The local end-to-end flow already exists, Seedance rendering is wired behind a safe fallback, BullMQ/Redis queues are available for material analysis, script generation, and rendering, and PostgreSQL persistence can be enabled through Prisma. A production-demo Docker Compose setup is available under `infra/docker/docker-compose.prod.yml`. Object storage is still a planned upgrade.
 
