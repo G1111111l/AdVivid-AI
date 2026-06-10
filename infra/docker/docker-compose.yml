@@ -1,0 +1,107 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: advivid
+      POSTGRES_PASSWORD: advivid
+      POSTGRES_DB: advivid
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${ENVMENT_DIR:-E:/envment}/postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U advivid -d advivid"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - ${ENVMENT_DIR:-E:/envment}/redis-data:/data
+
+  api:
+    image: node:20-bookworm
+    working_dir: /app
+    command: sh -c "npm install && npx prisma db push --schema apps/api/prisma/schema.prisma && npm run dev:api"
+    env_file:
+      - ../../.env
+    environment:
+      STORE_DRIVER: prisma
+      DATABASE_URL: postgresql://advivid:advivid@postgres:5432/advivid
+      PYTHON_AGENT_URL: http://agent-python:8001
+      QUEUE_DRIVER: bullmq
+      REDIS_URL: redis://redis:6379
+      NPM_CONFIG_CACHE: /envment/npm-cache
+      PRISMA_ENGINES_CACHE_DIR: /envment/prisma-engines
+    ports:
+      - "4000:4000"
+    volumes:
+      - ../../:/app
+      - ${ENVMENT_DIR:-E:/envment}/npm-cache:/envment/npm-cache
+      - ${ENVMENT_DIR:-E:/envment}/prisma-engines:/envment/prisma-engines
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      agent-python:
+        condition: service_started
+
+  worker:
+    image: node:20-bookworm
+    working_dir: /app
+    command: sh -c "npm install && npm run dev:worker"
+    env_file:
+      - ../../.env
+    environment:
+      STORE_DRIVER: prisma
+      DATABASE_URL: postgresql://advivid:advivid@postgres:5432/advivid
+      PYTHON_AGENT_URL: http://agent-python:8001
+      QUEUE_DRIVER: bullmq
+      REDIS_URL: redis://redis:6379
+      NPM_CONFIG_CACHE: /envment/npm-cache
+      PRISMA_ENGINES_CACHE_DIR: /envment/prisma-engines
+    volumes:
+      - ../../:/app
+      - ${ENVMENT_DIR:-E:/envment}/npm-cache:/envment/npm-cache
+      - ${ENVMENT_DIR:-E:/envment}/prisma-engines:/envment/prisma-engines
+    depends_on:
+      redis:
+        condition: service_started
+      api:
+        condition: service_started
+
+  agent-python:
+    image: python:3.12-slim
+    working_dir: /app
+    command: sh -c "pip install -r apps/agent-python/requirements.txt && python -m uvicorn app.main:app --app-dir apps/agent-python --host 0.0.0.0 --port 8001"
+    env_file:
+      - ../../.env
+    ports:
+      - "8001:8001"
+    environment:
+      PIP_CACHE_DIR: /envment/pip-cache
+    volumes:
+      - ../../:/app
+      - ${ENVMENT_DIR:-E:/envment}/pip-cache:/envment/pip-cache
+
+  web:
+    image: node:20-bookworm
+    working_dir: /app
+    command: sh -c "npm install && npm run dev:web"
+    env_file:
+      - ../../.env
+    environment:
+      NPM_CONFIG_CACHE: /envment/npm-cache
+    ports:
+      - "5173:5173"
+    volumes:
+      - ../../:/app
+      - ${ENVMENT_DIR:-E:/envment}/npm-cache:/envment/npm-cache
+    depends_on:
+      - api

@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MaterialType {
+  product_image
+  product_video
+  reference_image
+  reference_video
+  generated_video
+  audio
+}
+
+enum ProjectStatus {
+  draft
+  scripted
+  rendering
+  ready
+  failed
+}
+
+enum JobStatus {
+  queued
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model Product {
+  id             String    @id @default(cuid())
+  title          String
+  sellingPoints  String[]
+  targetAudience String
+  scenario       String
+  style          String
+  creativeBrief  String    @default("")
+  language       String    @default("zh-CN")
+  durationSec    Int       @default(24)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  projects       Project[]
+  scripts        Script[]
+}
+
+model Material {
+  id            String                 @id @default(cuid())
+  projectId     String?
+  type          MaterialType
+  name          String
+  mimeType      String
+  size          Int
+  url           String
+  path          String
+  cutoutUrl     String?
+  cutoutPath    String?
+  cutoutStatus  String?
+  summary       String                 @default("")
+  tags          String[]
+  embeddingJson Json?
+  embedding     Unsupported("vector")?
+  createdAt     DateTime               @default(now())
+  updatedAt     DateTime               @updatedAt
+  slices        MaterialSlice[]
+}
+
+model MaterialSlice {
+  id            String                 @id @default(cuid())
+  materialId    String
+  index         Int
+  startSec      Int                    @default(0)
+  endSec        Int                    @default(0)
+  thumbnailUrl  String?
+  summary       String
+  tags          String[]
+  embeddingJson Json?
+  embedding     Unsupported("vector")?
+  createdAt     DateTime               @default(now())
+  material      Material               @relation(fields: [materialId], references: [id], onDelete: Cascade)
+}
+
+model CreativeTemplate {
+  id       String   @id @default(cuid())
+  name     String
+  category String
+  strategy String
+  factors  String[]
+  source   String   @default("mock")
+}
+
+model Project {
+  id        String        @id @default(cuid())
+  name      String
+  productId String
+  scriptId  String?
+  status    ProjectStatus @default(draft)
+  coverUrl  String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  product   Product       @relation(fields: [productId], references: [id])
+}
+
+model Script {
+  id          String   @id @default(cuid())
+  projectId   String
+  productId   String
+  title       String
+  narrative   String
+  hook        String
+  style       String
+  strategy    String
+  constraints String[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  product     Product  @relation(fields: [productId], references: [id])
+  scenes      Scene[]
+}
+
+model Scene {
+  id              String   @id @default(cuid())
+  projectId       String
+  scriptId        String
+  order           Int
+  title           String
+  visual          String
+  camera          String
+  voiceover       String
+  subtitle        String
+  bgm             String
+  durationSec     Int
+  materialId      String?
+  materialSliceId String?
+  generationMode  String
+  tags            String[]
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  script          Script   @relation(fields: [scriptId], references: [id], onDelete: Cascade)
+}
+
+model RenderJob {
+  id            String    @id @default(cuid())
+  taskType      String    @default("video_render")
+  projectId     String?
+  productId     String?
+  scriptId      String?
+  materialId    String?
+  status        JobStatus
+  progress      Int       @default(0)
+  currentStep   String
+  error         String?
+  renderPlan    Json?
+  outputVideoId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model GeneratedVideo {
+  id          String   @id @default(cuid())
+  projectId   String
+  jobId       String
+  url         String
+  path        String
+  ratio       String
+  resolution  String
+  durationSec Int
+  version     Int
+  createdAt   DateTime @default(now())
+}
+
+model GenerationTrace {
+  id        String   @id @default(cuid())
+  jobId     String?
+  projectId String?
+  node      String
+  status    String
+  message   String
+  input     Json?
+  output    Json?
+  createdAt DateTime @default(now())
+}
+
+model AnalyticsMockEvent {
+  id             String   @id @default(cuid())
+  projectId      String?
+  videoId        String?
+  label          String
+  hookType       String
+  styleFactor    String
+  views          Int
+  ctr            Float
+  conversionRate Float
+  createdAt      DateTime @default(now())
+}

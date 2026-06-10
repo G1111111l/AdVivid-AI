@@ -1,0 +1,48 @@
+{
+  "name": "advivid-ai",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "concurrently -n agent,api,web -c green,cyan,magenta \"npm run dev:agent\" \"npm run dev -w @advivid/api\" \"npm run dev -w @advivid/web\"",
+    "dev:queue": "concurrently -n agent,api,worker,web -c green,cyan,yellow,magenta \"npm run dev:agent\" \"npm run dev -w @advivid/api\" \"npm run dev -w @advivid/worker\" \"npm run dev -w @advivid/web\"",
+    "dev:node": "concurrently -n api,web -c cyan,magenta \"npm run dev -w @advivid/api\" \"npm run dev -w @advivid/web\"",
+    "dev:api": "npm run dev -w @advivid/api",
+    "dev:agent": "python -m uvicorn app.main:app --app-dir apps/agent-python --host 0.0.0.0 --port 8002 --reload",
+    "dev:web": "npm run dev -w @advivid/web",
+    "dev:worker": "npm run dev -w @advivid/worker",
+    "setup:python": "python -m pip install -r apps/agent-python/requirements.txt",
+    "db:generate": "prisma generate --schema apps/api/prisma/schema.prisma",
+    "db:push": "prisma db push --schema apps/api/prisma/schema.prisma",
+    "db:migrate": "prisma migrate dev --schema apps/api/prisma/schema.prisma",
+    "db:studio": "prisma studio --schema apps/api/prisma/schema.prisma",
+    "build": "npm run build -w @advivid/shared && npm run build -w @advivid/agent && npm run build -w @advivid/video && npm run build -w @advivid/api && npm run build -w @advivid/worker && npm run build -w @advivid/web",
+    "check": "npm run check --workspaces --if-present",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:style": "stylelint \"apps/web/src/**/*.css\"",
+    "format": "prettier --write .",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.28.0",
+    "@types/node": "^20.17.57",
+    "@typescript-eslint/eslint-plugin": "^8.34.0",
+    "@typescript-eslint/parser": "^8.34.0",
+    "autoprefixer": "^10.4.21",
+    "concurrently": "^9.1.2",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
+    "husky": "^9.1.7",
+    "postcss": "^8.5.4",
+    "prettier": "^3.5.3",
+    "stylelint": "^16.20.0",
+    "stylelint-config-standard": "^38.0.0",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

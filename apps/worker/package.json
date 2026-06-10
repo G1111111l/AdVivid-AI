@@ -1,0 +1,20 @@
+{
+  "name": "@advivid/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
+    "build": "tsc -p tsconfig.json --noEmit",
+    "check": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@advivid/agent": "file:../../packages/agent",
+    "@advivid/shared": "file:../../packages/shared",
+    "@advivid/video": "file:../../packages/video",
+    "bullmq": "^5.56.0",
+    "dotenv": "^16.5.0",
+    "ioredis": "^5.6.1"
+  }
+}

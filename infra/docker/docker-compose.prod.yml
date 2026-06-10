@@ -1,0 +1,160 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: advivid
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-advivid}
+      POSTGRES_DB: advivid
+    volumes:
+      - ${ENVMENT_DIR:-E:/envment}/postgres-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U advivid -d advivid"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - ${ENVMENT_DIR:-E:/envment}/redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  agent-python:
+    build:
+      context: ../..
+      dockerfile: infra/docker/agent-python.Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../../.env
+    environment:
+      PIP_CACHE_DIR: /envment/pip-cache
+      PYTHON_AGENT_PORT: 8001
+    volumes:
+      - ${ENVMENT_DIR:-E:/envment}/pip-cache:/envment/pip-cache
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8001/health', timeout=3).read()"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-runtime.Dockerfile
+    restart: unless-stopped
+    command: sh -c "npx prisma db push --schema apps/api/prisma/schema.prisma && npm run start -w @advivid/api"
+    env_file:
+      - ../../.env
+    environment:
+      NODE_ENV: production
+      API_HOST: 0.0.0.0
+      API_PORT: 4000
+      WEB_ORIGIN: ${PUBLIC_WEB_ORIGIN:-http://localhost}
+      STORE_DRIVER: prisma
+      DATABASE_URL: postgresql://advivid:${POSTGRES_PASSWORD:-advivid}@postgres:5432/advivid
+      AGENT_RUNTIME: python
+      PYTHON_AGENT_URL: http://agent-python:8001
+      QUEUE_DRIVER: bullmq
+      REDIS_URL: redis://redis:6379
+      LOCAL_DATA_DIR: /app/data
+      LOCAL_UPLOAD_DIR: /app/uploads
+      LOCAL_RENDER_DIR: /app/rendered
+      NPM_CONFIG_CACHE: /envment/npm-cache
+      PRISMA_ENGINES_CACHE_DIR: /envment/prisma-engines
+    volumes:
+      - ${ENVMENT_DIR:-E:/envment}/advivid-data:/app/data
+      - ${ENVMENT_DIR:-E:/envment}/advivid-uploads:/app/uploads
+      - ${ENVMENT_DIR:-E:/envment}/advivid-rendered:/app/rendered
+      - ${ENVMENT_DIR:-E:/envment}/npm-cache:/envment/npm-cache
+      - ${ENVMENT_DIR:-E:/envment}/prisma-engines:/envment/prisma-engines
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      agent-python:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:4000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infra/docker/node-runtime.Dockerfile
+    restart: unless-stopped
+    command: npm run start -w @advivid/worker
+    env_file:
+      - ../../.env
+    environment:
+      NODE_ENV: production
+      STORE_DRIVER: prisma
+      DATABASE_URL: postgresql://advivid:${POSTGRES_PASSWORD:-advivid}@postgres:5432/advivid
+      AGENT_RUNTIME: python
+      PYTHON_AGENT_URL: http://agent-python:8001
+      QUEUE_DRIVER: bullmq
+      REDIS_URL: redis://redis:6379
+      LOCAL_DATA_DIR: /app/data
+      LOCAL_UPLOAD_DIR: /app/uploads
+      LOCAL_RENDER_DIR: /app/rendered
+      NPM_CONFIG_CACHE: /envment/npm-cache
+      PRISMA_ENGINES_CACHE_DIR: /envment/prisma-engines
+    volumes:
+      - ${ENVMENT_DIR:-E:/envment}/advivid-data:/app/data
+      - ${ENVMENT_DIR:-E:/envment}/advivid-uploads:/app/uploads
+      - ${ENVMENT_DIR:-E:/envment}/advivid-rendered:/app/rendered
+      - ${ENVMENT_DIR:-E:/envment}/npm-cache:/envment/npm-cache
+      - ${ENVMENT_DIR:-E:/envment}/prisma-engines:/envment/prisma-engines
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      api:
+        condition: service_healthy
+
+  web:
+    build:
+      context: ../..
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    ports:
+      - "${HTTP_PORT:-80}:80"
+    volumes:
+      - ../nginx/prod.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      web:
+        condition: service_started
