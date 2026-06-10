@@ -22,7 +22,7 @@ npm run dev
 
 Open:
 
-- Web: http://localhost:5173
+- Web: http://122.51.232.163
 - API health: http://localhost:4000/api/health
 - Python Agent health: http://localhost:8002/health
 
