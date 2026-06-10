@@ -13,6 +13,7 @@ npm-debug.log*
 *.log
 *.pdf
 *.mp4
+!docs/assets/*.mp4
 advivid-deploy*.tar.gz
 advivid-deploy*.zip
 tmp-*

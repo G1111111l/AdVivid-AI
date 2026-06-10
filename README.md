@@ -2,6 +2,12 @@
 
 An AIGC commerce video studio for the challenge project. The MVP supports product setup, material upload, material analysis, Python LangGraph script generation, scene editing, one-click rendering, progress tracing, preview/export, and mock analytics.
 
+## Demo Video
+
+<video src="https://github.com/G1111111l/AdVivid-AI/raw/main/docs/assets/seedance-output.mp4" controls width="360"></video>
+
+[Open demo video](docs/assets/seedance-output.mp4)
+
 ## Tech Stack
 
 - Frontend: React, Vite, TypeScript, TailwindCSS, ECharts, lucide-react
