@@ -422,21 +422,6 @@ async function createTask(prompt: string, images: ProviderImageInput[] = []) {
   }
 }
 
-async function createTextOnlyTask(prompt: string) {
-  return requestJson(`${config.ark.baseUrl.replace(/\/$/, "")}/contents/generations/tasks`, {
-    method: "POST",
-    body: JSON.stringify({
-      model: config.ark.videoEndpoint,
-      content: [
-        {
-          type: "text",
-          text: prompt
-        }
-      ]
-    })
-  });
-}
-
 async function getTask(taskId: string) {
   return requestJson(
     `${config.ark.baseUrl.replace(/\/$/, "")}/contents/generations/tasks/${taskId}`,
