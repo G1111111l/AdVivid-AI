@@ -4,9 +4,9 @@ An AIGC commerce video studio for the challenge project. The MVP supports produc
 
 ## Demo Video
 
-<video src="https://github.com/G1111111l/AdVivid-AI/raw/main/docs/assets/seedance-output.mp4" controls width="360"></video>
+[![AdVivid AI demo video preview](docs/assets/seedance-demo.gif)](docs/assets/seedance-output.mp4)
 
-[Open demo video](docs/assets/seedance-output.mp4)
+[Open full MP4 demo video](docs/assets/seedance-output.mp4)
 
 ## Tech Stack
 
