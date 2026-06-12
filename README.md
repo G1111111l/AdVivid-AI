@@ -1,4 +1,4 @@
-# AdVivid AI
+# AdVivid AI AIGC电商带货视频生成
 
 An AIGC commerce video studio for the challenge project. The MVP supports product setup, material upload, material analysis, Python LangGraph script generation, scene editing, one-click rendering, progress tracing, preview/export, and mock analytics.
 
